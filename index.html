@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>𝐋𝐚𝐩𝐨𝐫𝐚𝐧 𝐏𝐞𝐧𝐠𝐞𝐥𝐮𝐚𝐫𝐚𝐧 𝐊𝐞𝐮𝐚𝐧𝐠𝐚𝐧</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+  font-family:'Inter',sans-serif;
+  background:#f4f6fb;
+}
+.card-soft{
+  border:0;
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+.table thead{
+  background:#eef1f7;
+}
+</style>
+</head>
+<body class="p-3">
+
+<div class="container">
+
+<h4 class="mb-4 fw-bold">𝐋𝐚𝐩𝐨𝐫𝐚𝐧 𝐏𝐞𝐧𝐠𝐞𝐥𝐮𝐚𝐫𝐚𝐧 𝐊𝐞𝐮𝐚𝐧𝐠𝐚𝐧</h4>
+
+<!-- CARD INFO -->
+<div class="row g-3 mb-4">
+  <div class="col-6">
+    <div class="card card-soft p-3">
+      <small>𝐓𝐨𝐭𝐚𝐥 𝐒𝐚𝐥𝐝𝐨</small>
+      <h5 id="totalSaldo" class="fw-bold">Rp 0</h5>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="card card-soft p-3">
+      <small>𝐉𝐮𝐦𝐥𝐚𝐡 𝐄𝐧𝐭𝐫𝐢</small>
+      <h5 id="totalEntri" class="fw-bold">0</h5>
+    </div>
+  </div>
+</div>
+
+<!-- FORM INPUT -->
+<div class="card card-soft p-3 mb-4">
+  <div class="row g-2">
+    <div class="col-md-3">
+      <input type="date" id="tanggal" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <input type="text" id="keterangan" class="form-control" placeholder="Keterangan">
+    </div>
+    <div class="col-md-2">
+      <input type="number" id="debit" class="form-control" placeholder="Debit">
+    </div>
+    <div class="col-md-2">
+      <input type="number" id="credit" class="form-control" placeholder="Credit">
+    </div>
+    <div class="col-md-2 d-grid">
+      <button onclick="simpanData()" class="btn btn-primary">𝐓𝐚𝐦𝐛𝐚𝐡</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABEL -->
+<div class="card card-soft p-3">
+<table class="table align-middle">
+<thead>
+<tr>
+<th>𝐓𝐚𝐧𝐠𝐠𝐚𝐥</th>
+<th>𝐊𝐞𝐭𝐞𝐫𝐚𝐧𝐠𝐚𝐧</th>
+<th>𝐃𝐞𝐛𝐢𝐭</th>
+<th>𝐂𝐫𝐞𝐝𝐢𝐭</th>
+<th>𝐓𝐨𝐭𝐚𝐥 𝐒𝐚𝐥𝐝𝐨</th>
+</tr>
+</thead>
+<tbody id="tabelData"></tbody>
+</table>
+
+<button onclick="resetAll()" class="btn btn-danger btn-sm">Reset All</button>
+</div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCHhmNaNC7pImRHUrEjCdLrHvdReRTe-hA",
+  authDomain: "game-59094.firebaseapp.com",
+  projectId: "game-59094",
+  storageBucket: "game-59094.firebasestorage.app",
+  messagingSenderId: "239664999702",
+  appId: "1:239664999702:web:85332e013a7b01476df437",
+  measurementId: "G-KHJEQCWD7J"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const colRef = collection(db, "keuangan");
+
+const tanggal = document.getElementById("tanggal");
+const keterangan = document.getElementById("keterangan");
+const debit = document.getElementById("debit");
+const credit = document.getElementById("credit");
+const tabelData = document.getElementById("tabelData");
+const totalSaldo = document.getElementById("totalSaldo");
+const totalEntri = document.getElementById("totalEntri");
+
+window.simpanData = async () => {
+  if (!tanggal.value || !keterangan.value) {
+    alert("Tanggal dan keterangan wajib diisi");
+    return;
+  }
+
+  await addDoc(colRef, {
+    tanggal: tanggal.value,
+    keterangan: keterangan.value,
+    debit: Number(debit.value || 0),
+    credit: Number(credit.value || 0)
+  });
+
+  tanggal.value = "";
+  keterangan.value = "";
+  debit.value = "";
+  credit.value = "";
+};
+
+onSnapshot(colRef, (snap) => {
+  tabelData.innerHTML = "";
+  let saldo = 0;
+  let total = 0;
+
+  snap.forEach(doc => {
+    const d = doc.data();
+    saldo += d.debit - d.credit;
+    total++;
+
+    tabelData.innerHTML += `
+      <tr>
+        <td>${d.tanggal}</td>
+        <td>${d.keterangan}</td>
+        <td>Rp ${d.debit.toLocaleString()}</td>
+        <td>Rp ${d.credit.toLocaleString()}</td>
+        <td>Rp ${saldo.toLocaleString()}</td>
+      </tr>
+    `;
+  });
+
+  totalSaldo.innerText = "Rp " + saldo.toLocaleString();
+  totalEntri.innerText = total;
+});
+
+window.resetAll = async () => {
+  if (!confirm("Hapus semua data?")) return;
+  const docs = await getDocs(colRef);
+  docs.forEach(d => deleteDoc(d.ref));
+};
+</script>
+
+</body>
+</html>
