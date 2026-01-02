@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="id">
 <head>
@@ -44,7 +45,6 @@ body{
     </div>
   </div>
 </div>
-
 <!-- FORM INPUT -->
 <div class="card card-soft p-3 mb-4">
   <div class="row g-2">
@@ -65,30 +65,32 @@ body{
     </div>
   </div>
 </div>
-
+<button onclick="hapusDipilih()" class="btn btn-warning btn-sm mt-3">Hapus yang Dipilih</button>
+<button onclick="resetAll()" class="btn btn-danger btn-sm mt-3">Reset All</button>
 <!-- TABEL -->
 <div class="card card-soft p-3">
 <table class="table align-middle">
 <thead>
 <tr>
-<th>𝐓𝐚𝐧𝐠𝐠𝐚𝐥</th>
-<th>𝐊𝐞𝐭𝐞𝐫𝐚𝐧𝐠𝐚𝐧</th>
-<th>𝐃𝐞𝐛𝐢𝐭</th>
-<th>𝐂𝐫𝐞𝐝𝐢𝐭</th>
-<th>𝐓𝐨𝐭𝐚𝐥 𝐒𝐚𝐥𝐝𝐨</th>
+  <th>Pilih</th>
+  <th>Tanggal</th>
+  <th>Keterangan</th>
+  <th>Debit</th>
+  <th>Credit</th>
+  <th>Total Saldo</th>
+  <th>Aksi</th>
 </tr>
 </thead>
 <tbody id="tabelData"></tbody>
 </table>
-
-<button onclick="resetAll()" class="btn btn-danger btn-sm">Reset All</button>
 </div>
 
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyCHhmNaNC7pImRHUrEjCdLrHvdReRTe-hA",
@@ -136,18 +138,29 @@ onSnapshot(colRef, (snap) => {
   let saldo = 0;
   let total = 0;
 
-  snap.forEach(doc => {
-    const d = doc.data();
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    const id = docSnap.id;
+
     saldo += d.debit - d.credit;
     total++;
 
     tabelData.innerHTML += `
       <tr>
+        <td>
+          <input type="checkbox" class="pilihData" value="${id}">
+        </td>
         <td>${d.tanggal}</td>
         <td>${d.keterangan}</td>
         <td>Rp ${d.debit.toLocaleString()}</td>
         <td>Rp ${d.credit.toLocaleString()}</td>
         <td>Rp ${saldo.toLocaleString()}</td>
+        <td>
+          <button class="btn btn-danger btn-sm" 
+            onclick="hapusSatu('${id}')">
+            Hapus
+          </button>
+        </td>
       </tr>
     `;
   });
@@ -155,6 +168,23 @@ onSnapshot(colRef, (snap) => {
   totalSaldo.innerText = "Rp " + saldo.toLocaleString();
   totalEntri.innerText = total;
 });
+window.hapusSatu = async (id) => {
+  if (!confirm("Hapus data ini?")) return;
+  await deleteDoc(doc(db, "keuangan", id));
+};
+window.hapusDipilih = async () => {
+  const checked = document.querySelectorAll(".pilihData:checked");
+  if (checked.length === 0) {
+    alert("Pilih data terlebih dahulu");
+    return;
+  }
+
+  if (!confirm("Hapus data yang dipilih?")) return;
+
+  for (let cb of checked) {
+    await deleteDoc(doc(db, "keuangan", cb.value));
+  }
+};
 
 window.resetAll = async () => {
   if (!confirm("Hapus semua data?")) return;
