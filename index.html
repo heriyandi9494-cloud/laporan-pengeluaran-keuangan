@@ -1,5 +1,6 @@
 
 
+
 <!doctype html>
 <html lang="id">
 <head>
@@ -162,11 +163,9 @@
 </div>
 
 </div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, getDocs, doc, orderBy, query } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCHhmNaNC7pImRHUrEjCdLrHvdReRTe-hA",
@@ -190,6 +189,19 @@ const tabelData = document.getElementById("tabelData");
 const totalSaldo = document.getElementById("totalSaldo");
 const totalEntri = document.getElementById("totalEntri");
 
+// Set default date input to today's date
+function setDefaultDate() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = (today.getMonth() + 1).toString().padStart(2, '0'); // Add leading zero for single-digit months
+  const dd = today.getDate().toString().padStart(2, '0'); // Add leading zero for single-digit days
+  const todayDate = `${yyyy}-${mm}-${dd}`;
+  tanggal.value = todayDate;
+}
+
+// Call the function to set today's date when the page loads
+window.onload = setDefaultDate;
+
 window.simpanData = async () => {
   if (!tanggal.value || !keterangan.value) {
     alert("Tanggal dan keterangan wajib diisi");
@@ -209,7 +221,10 @@ window.simpanData = async () => {
   credit.value = "";
 };
 
-onSnapshot(colRef, (snap) => {
+// Query for ordered data by tanggal
+const q = query(colRef, orderBy("tanggal", "asc"));
+
+onSnapshot(q, (snap) => {
   tabelData.innerHTML = "";
   let saldo = 0;
   let total = 0;
@@ -218,7 +233,13 @@ onSnapshot(colRef, (snap) => {
     const d = docSnap.data();
     const id = docSnap.id;
 
-    saldo += d.debit - d.credit;
+    // Logic for calculating saldo based on debit and credit
+    // If there is debit, add to saldo
+    saldo += d.debit;
+
+    // If there is credit, subtract from saldo
+    saldo -= d.credit;
+
     total++;
 
     tabelData.innerHTML += `
@@ -244,10 +265,12 @@ onSnapshot(colRef, (snap) => {
   totalSaldo.innerText = "Rp " + saldo.toLocaleString();
   totalEntri.innerText = total;
 });
+
 window.hapusSatu = async (id) => {
   if (!confirm("Hapus data ini?")) return;
   await deleteDoc(doc(db, "keuangan", id));
 };
+
 window.hapusDipilih = async () => {
   const checked = document.querySelectorAll(".pilihData:checked");
   if (checked.length === 0) {
@@ -268,6 +291,8 @@ window.resetAll = async () => {
   docs.forEach(d => deleteDoc(d.ref));
 };
 </script>
+
+
 
 </body>
 </html>
